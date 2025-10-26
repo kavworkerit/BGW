@@ -1,13 +1,12 @@
 from sqlalchemy import Column, String, Numeric, DateTime, ForeignKey
 from sqlalchemy.dialects.postgresql import UUID
-from sqlalchemy.sql import func
 from sqlalchemy.orm import relationship
 import uuid
 
-from app.models.base import Base
+from .base import BaseModel
 
 
-class PriceHistory(Base):
+class PriceHistory(BaseModel):
     """Модель истории цен (TimescaleDB hypertable)"""
     __tablename__ = "price_history"
 
@@ -18,7 +17,7 @@ class PriceHistory(Base):
     currency = Column(String(3), default="RUB")
 
     # Relationships
-    game = relationship("Game", backref="price_history")
+    game = relationship("Game", back_populates="price_history")
     store = relationship("Store", backref="price_history")
 
     def __repr__(self):

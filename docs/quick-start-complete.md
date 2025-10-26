@@ -8,7 +8,7 @@ BGW (Board Games Watcher) - полностью готовая система д�
 
 ```bash
 # 1. Клонирование
-git clone https://github.com/your-org/bgw.git
+git clone https://github.com/kavworkerit/BGW.git
 cd bgw
 
 # 2. Настройка окружения

@@ -36,6 +36,7 @@ class ListingEvent(BaseModel):
 
     # Relationships
     notifications = relationship("Notification", back_populates="event")
+    game = relationship("Game", back_populates="listing_events")
 
     def __repr__(self):
         return f"<ListingEvent(title='{self.title}', kind='{self.kind.value}')>"

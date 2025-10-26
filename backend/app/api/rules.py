@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from typing import List
 from uuid import UUID
 
-from app.schemas.alert_rule import AlertRule, AlertRuleCreate, AlertRuleUpdate, AlertRuleResponse
+from app.schemas.alert_rule import AlertRule as AlertRuleSchema, AlertRuleCreate, AlertRuleUpdate, AlertRuleResponse
 from app.services.notification_service import NotificationService
 from app.core.database import get_db
 
@@ -21,7 +21,7 @@ async def get_rules(db=Depends(get_db)):
 async def create_rule(rule: AlertRuleCreate, db=Depends(get_db)):
     """Создать новое правило уведомлений"""
     notification_service = NotificationService(db)
-    created_rule = await notification_service.create_rule(rule)
+    created_rule = await notification_service.create_rule(rule.model_dump())
     return created_rule
 
 
@@ -29,7 +29,8 @@ async def create_rule(rule: AlertRuleCreate, db=Depends(get_db)):
 async def update_rule(rule_id: UUID, rule: AlertRuleUpdate, db=Depends(get_db)):
     """Обновить правило уведомлений"""
     notification_service = NotificationService(db)
-    updated_rule = await notification_service.update_rule(rule_id, rule)
+    update_data = rule.model_dump(exclude_unset=True)
+    updated_rule = await notification_service.update_rule(rule_id, update_data)
     if not updated_rule:
         raise HTTPException(status_code=404, detail="Правило не найдено")
     return updated_rule

@@ -4,14 +4,13 @@ from sqlalchemy.sql import func
 from sqlalchemy.orm import relationship
 import uuid
 
-from app.models.base import Base
+from .base import BaseModel
 
 
-class AlertRule(Base):
+class AlertRule(BaseModel):
     """Модель правил уведомлений"""
     __tablename__ = "alert_rule"
 
-    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     name = Column(String(255), nullable=False)
     logic = Column(String(10), nullable=False, default="AND")  # 'AND' or 'OR'
     conditions = Column(JSON, nullable=False)

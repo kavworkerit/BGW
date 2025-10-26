@@ -4,12 +4,13 @@
 
 - **Base URL**: `http://localhost:8000`
 - **API Documentation**: `/docs` (Swagger UI)
+- **API Prefix**: `/api` (все эндпоинты начинаются с `/api/`)
 - **Authentication**: JWT токены (локальная однопользовательская)
 - **Content-Type**: `application/json`
 
 ## Аутентификация
 
-### POST /auth/login
+### POST /api/auth/login
 Локальный вход пользователя.
 
 ```json
@@ -29,7 +30,7 @@
 
 ## Игры (Watchlist)
 
-### GET /games
+### GET /api/games
 Получить список игр с пагинацией и фильтрами.
 
 **Query Parameters:**
@@ -79,7 +80,7 @@
 }
 ```
 
-### POST /games
+### POST /api/games
 Добавить новую игру в watchlist.
 
 ```json

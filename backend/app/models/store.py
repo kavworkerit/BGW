@@ -5,7 +5,6 @@ from .base import BaseModel
 class Store(BaseModel):
     __tablename__ = "store"
 
-    id = Column(String(100), primary_key=True)
     name = Column(String(200), nullable=False, index=True)
     site_url = Column(String(500), nullable=True)
     region = Column(String(10), default="RU", index=True)
@@ -24,4 +23,4 @@ class Store(BaseModel):
     social_links = Column(Text, nullable=True)  # JSON строка с соц. сетями
 
     def __repr__(self):
-        return f"<Store(id='{self.id}', name='{self.name}', active={self.is_active})>"
+        return f"Store(id={self.id}, name='{self.name}', active={self.is_active})"

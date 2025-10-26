@@ -58,7 +58,7 @@ mkdir C:\Projects
 cd C:\Projects
 
 # Клонируем репозиторий (замените URL на реальный)
-git clone https://github.com/your-org/bgw.git
+git clone https://github.com/kavworkerit/BGW.git
 cd bgw
 ```
 

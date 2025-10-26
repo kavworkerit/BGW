@@ -45,19 +45,22 @@ BGW - это локальная однопользовательская сис�
 Game:
   id: UUID (PK)
   title: String(500)
-  synonyms: Array<String>
+  synonyms: JSON  # JSONType для кросс-базовой совместимости
   bgg_id: String(50)  # BoardGameGeek ID
   publisher: String(200)
-  tags: Array<String>
+  tags: JSON  # JSONType для кросс-базовой совместимости
   description: Text
-  min_players, max_players: Integer
-  min_playtime, max_playtime: Integer  # в минутах
+  min_players: Integer
+  max_players: Integer
+  min_playtime: Integer  # в минутах
+  max_playtime: Integer  # в минутах
   year_published: Integer
   language: String(10)  # RU, EN, etc.
   complexity: Float  # 1-5
   image_url: String(500)
   rating_bgg: Float
   rating_users: Float
+  weight: Float  # вес/сложность BGG
 ```
 
 #### Магазины (Store)
@@ -111,9 +114,9 @@ PriceHistory:  # TimescaleDB hypertable
   currency: String(3)
 ```
 
-#### Агенты источников (SourceAgent)
+#### Агенты (Agent)
 ```python
-SourceAgent:
+Agent:
   id: String (PK)
   name: String(255)
   type: String(50)  # ENUM(api, html, headless, telegram_public)
@@ -130,7 +133,7 @@ AlertRule:
   name: String(255)
   logic: String(10)  # AND/OR
   conditions: JSON
-  channels: Array<String>  # [webpush, telegram]
+  channels: JSON  # [webpush, telegram]
   cooldown_hours: String(10)
   enabled: Boolean
 ```

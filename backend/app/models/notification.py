@@ -4,14 +4,13 @@ from sqlalchemy.sql import func
 from sqlalchemy.orm import relationship
 import uuid
 
-from app.models.base import Base
+from .base import BaseModel
 
 
-class Notification(Base):
+class Notification(BaseModel):
     """Модель уведомлений"""
     __tablename__ = "notification"
 
-    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     rule_id = Column(UUID(as_uuid=True), ForeignKey("alert_rule.id"), nullable=False)
     event_id = Column(UUID(as_uuid=True), ForeignKey("listing_event.id"), nullable=False)
     status = Column(String(20), nullable=False, default="pending")  # 'sent', 'error', 'deferred'

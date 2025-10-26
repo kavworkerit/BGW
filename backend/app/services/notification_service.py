@@ -194,6 +194,10 @@ class NotificationService:
         """Получить все уведомления."""
         return self.db.query(Notification).order_by(Notification.created_at.desc()).all()
 
+    async def get_all_rules(self) -> List[AlertRule]:
+        """Получить все правила уведомлений."""
+        return self.db.query(AlertRule).order_by(AlertRule.created_at.desc()).all()
+
     async def create_rule(self, rule_data: dict) -> AlertRule:
         """Создать правило уведомлений."""
         rule = AlertRule(**rule_data)

@@ -25,7 +25,11 @@
       "Bash(pip3 install:*)",
       "Bash(docker-compose restart:*)",
       "Bash(docker-compose exec api alembic upgrade:*)",
-      "Bash(docker-compose exec:*)"
+      "Bash(docker-compose exec:*)",
+      "Bash(for:*)",
+      "Bash(do echo:*)",
+      "Bash(done)",
+      "Bash(make:*)"
     ],
     "deny": [],
     "ask": []

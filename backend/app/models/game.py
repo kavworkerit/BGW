@@ -1,6 +1,7 @@
 from sqlalchemy import Column, String, DateTime, Text, Integer, Float, JSON
 from sqlalchemy.dialects.postgresql import UUID, ARRAY
 from sqlalchemy_utils import JSONType
+from sqlalchemy.orm import relationship
 from .base import BaseModel
 import uuid
 
@@ -8,7 +9,7 @@ class Game(BaseModel):
     __tablename__ = "game"
 
     title = Column(String(500), nullable=False, index=True)
-    # Используем JSON для кросс-базовой совместимости
+    # Используем JSONType для кросс-базовой совместимости
     synonyms = Column(JSONType, default=list)
     bgg_id = Column(String(50), unique=True, nullable=True, index=True)
     publisher = Column(String(200), nullable=True, index=True)
@@ -26,5 +27,12 @@ class Game(BaseModel):
     rating_users = Column(Float, nullable=True)  # пользовательский рейтинг
     weight = Column(Float, nullable=True)  # вес/сложность
 
+    # Relationships
+    listing_events = relationship("ListingEvent", back_populates="game")
+    price_history = relationship("PriceHistory", back_populates="game")
+
     def __repr__(self):
-        return f"<Game(title='{self.title}', publisher='{self.publisher}')>"
+        return f"Game(id={self.id}, title='{self.title}')"
+
+    def __str__(self):
+        return self.title

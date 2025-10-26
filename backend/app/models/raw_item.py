@@ -4,14 +4,13 @@ from sqlalchemy.sql import func
 from sqlalchemy.orm import relationship
 import uuid
 
-from app.models.base import Base
+from .base import BaseModel
 
 
-class RawItem(Base):
+class RawItem(BaseModel):
     """Модель сырых данных от агента"""
     __tablename__ = "raw_item"
 
-    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     source_id = Column(String, ForeignKey("source_agent.id"), nullable=False)
     url = Column(Text)
     fetched_at = Column(DateTime(timezone=True), nullable=False, server_default=func.now())

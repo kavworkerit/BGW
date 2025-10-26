@@ -9,8 +9,7 @@ class CRUDGame(CRUDBase[Game, GameCreate, GameUpdate]):
     def search(self, db: Session, query: str, *, skip: int = 0, limit: int = 100):
         """Поиск игр по названию и синонимам."""
         search_filter = or_(
-            Game.title.ilike(f"%{query}%"),
-            Game.synonyms.any(query)
+            Game.title.ilike(f"%{query}%")
         )
         return db.query(self.model).filter(search_filter).offset(skip).limit(limit).all()
 

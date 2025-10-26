@@ -1,13 +1,12 @@
 from sqlalchemy import Column, String, DateTime, Boolean, Text, JSON
 from sqlalchemy.sql import func
-from app.models.base import Base
+from .base import BaseModel
 
 
-class WebPushSubscription(Base):
+class WebPushSubscription(BaseModel):
     """Модель для подписок Web Push."""
     __tablename__ = "webpush_subscription"
 
-    id = Column(String, primary_key=True)  # UUID или уникальный хэш
     user_agent = Column(String(500), nullable=False)
     endpoint = Column(String(1000), nullable=False, unique=True)
     p256dh_key = Column(String(255), nullable=False)
