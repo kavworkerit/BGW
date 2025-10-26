@@ -2,7 +2,30 @@
   "permissions": {
     "allow": [
       "Bash(mkdir:*)",
-      "Bash(chmod:*)"
+      "Bash(chmod:*)",
+      "Bash(find:*)",
+      "Bash(tree:*)",
+      "Bash(python:*)",
+      "Bash(python3:*)",
+      "Bash(source:*)",
+      "Bash(pip install:*)",
+      "Bash(playwright install:*)",
+      "Bash(npm install:*)",
+      "Bash(npm run dev:*)",
+      "Read(//mnt/c/Projects/**)",
+      "Bash(backend/backend_venv/bin/python -m pytest:*)",
+      "Bash(mv:*)",
+      "Bash(pytest:*)",
+      "Bash(backend_venv/bin/python:*)",
+      "Bash(backend_venv/bin/pip:*)",
+      "Bash(sudo apt:*)",
+      "Bash(sudo apt install:*)",
+      "Bash(docker:*)",
+      "Bash(docker-compose up:*)",
+      "Bash(pip3 install:*)",
+      "Bash(docker-compose restart:*)",
+      "Bash(docker-compose exec api alembic upgrade:*)",
+      "Bash(docker-compose exec:*)"
     ],
     "deny": [],
     "ask": []

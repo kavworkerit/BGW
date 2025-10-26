@@ -1,5 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
+from sqlalchemy.exc import IntegrityError
 from typing import List
 from app.core.database import get_db
 from app.models.store import Store
@@ -19,13 +20,16 @@ async def get_stores(
     return store_crud.get_multi(db, skip=skip, limit=limit)
 
 
-@router.post("/", response_model=StoreSchema)
+@router.post("/", response_model=StoreSchema, status_code=201)
 async def create_store(
     store: StoreCreate,
     db: Session = Depends(get_db)
 ):
     """Создать новый магазин."""
-    return store_crud.create(db, obj_in=store)
+    try:
+        return store_crud.create(db, obj_in=store)
+    except IntegrityError:
+        raise HTTPException(status_code=400, detail="Магазин с таким ID уже существует")
 
 
 @router.get("/{store_id}", response_model=StoreSchema)

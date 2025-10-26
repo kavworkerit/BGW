@@ -16,7 +16,7 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 # Установка Playwright браузеров
 RUN playwright install chromium
-RUN playwright install-deps chromium
+RUN playwright install-deps chromium || true
 
 # Копирование кода приложения
 COPY . .

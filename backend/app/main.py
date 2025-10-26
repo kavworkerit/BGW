@@ -7,14 +7,14 @@ import uvicorn
 from app.core.config import settings
 from app.core.database import engine
 from app.models import Base
-from app.api import auth, games, stores, agents, events, rules, notifications, settings as settings_api
+from app.api import auth, games, stores, agents, events, rules, notifications, settings as settings_api, export, dashboard, tasks, prices, webpush, llm, metrics
 from app.celery_app import celery_app
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # Инициализация базы данных
-    Base.metadata.create_all(bind=engine)
+    # Временно пропускаем инициализацию базы данных
+    # Она будет создана через миграции Alembic
     yield
     # Очистка при shutdown
 
@@ -44,6 +44,13 @@ app.include_router(events.router, prefix="/api/events", tags=["События"])
 app.include_router(rules.router, prefix="/api/rules", tags=["Правила"])
 app.include_router(notifications.router, prefix="/api/notifications", tags=["Уведомления"])
 app.include_router(settings_api.router, prefix="/api/settings", tags=["Настройки"])
+app.include_router(export.router, prefix="/api/export", tags=["Экспорт/Импорт"])
+app.include_router(dashboard.router, prefix="/api/dashboard", tags=["Дашборд"])
+app.include_router(tasks.router, prefix="/api/tasks", tags=["Задачи"])
+app.include_router(prices.router, prefix="/api/prices", tags=["Цены"])
+app.include_router(metrics.router, prefix="/api/metrics", tags=["Метрики"])
+app.include_router(webpush.router, prefix="/api/webpush", tags=["Web Push"])
+app.include_router(llm.router, prefix="/api/llm", tags=["LLM"])
 
 
 @app.get("/")
@@ -53,6 +60,7 @@ async def root():
 
 @app.get("/healthz")
 async def health_check():
+    """Простой health check."""
     return {"status": "ok", "service": "board-games-monitor"}
 
 

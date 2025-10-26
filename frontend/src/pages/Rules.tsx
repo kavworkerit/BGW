@@ -4,35 +4,45 @@ import {
   Button,
   Space,
   Modal,
-  Form,
-  Input,
-  Select,
-  Switch,
   Tag,
   Typography,
   Card,
-  Row,
-  Col,
-  InputNumber
+  Tabs,
+  Alert,
+  Spin
 } from 'antd'
 import {
   PlusOutlined,
   EditOutlined,
   DeleteOutlined,
   PlayCircleOutlined,
-  BellOutlined
+  BellOutlined,
+  EyeOutlined,
+  SaveOutlined,
+  CloseOutlined
 } from '@ant-design/icons'
 
+import RuleBuilder from '../components/RuleBuilder'
+import RulePreview from '../components/RulePreview'
+
 const { Title, Text } = Typography
-const { Option } = Select
+const { TabPane } = Tabs
+
+interface Condition {
+  id: string
+  field: string
+  operator: string
+  value: any
+  enabled: boolean
+}
 
 interface AlertRule {
   id: string
   name: string
   logic: 'AND' | 'OR'
-  conditions: any[]
+  conditions: Condition[]
   channels: string[]
-  cooldown_hours: number
+  cooldownHours: number
   enabled: boolean
   created_at: string
 }
@@ -44,11 +54,23 @@ const Rules: React.FC = () => {
       name: 'Громкое дело - предзаказ/релиз',
       logic: 'OR',
       conditions: [
-        { field: 'game', op: 'in', value: ['Громкое дело', 'Gromkoe Delo'] },
-        { field: 'title', op: 'contains_any', value: ['предзаказ', 'в продаже'] }
+        {
+          id: 'condition-1-1',
+          field: 'game',
+          operator: 'in',
+          value: ['Громкое дело', 'Gromkoe Delo'],
+          enabled: true
+        },
+        {
+          id: 'condition-1-2',
+          field: 'title',
+          operator: 'contains_any',
+          value: ['предзаказ', 'в продаже'],
+          enabled: true
+        }
       ],
       channels: ['webpush', 'telegram'],
-      cooldown_hours: 12,
+      cooldownHours: 12,
       enabled: true,
       created_at: '2024-01-15T10:30:00Z'
     },
@@ -57,11 +79,23 @@ const Rules: React.FC = () => {
       name: 'Скидки 20%+ в основных магазинах',
       logic: 'AND',
       conditions: [
-        { field: 'discount_pct', op: '>=', value: 20 },
-        { field: 'store_id', op: 'in', value: ['lavkaigr', 'hobbygames'] }
+        {
+          id: 'condition-2-1',
+          field: 'discount_pct',
+          operator: '>=',
+          value: 20,
+          enabled: true
+        },
+        {
+          id: 'condition-2-2',
+          field: 'store_id',
+          operator: 'in',
+          value: ['lavkaigr', 'hobbygames'],
+          enabled: true
+        }
       ],
       channels: ['webpush'],
-      cooldown_hours: 6,
+      cooldownHours: 6,
       enabled: true,
       created_at: '2024-01-10T14:20:00Z'
     }
@@ -69,7 +103,10 @@ const Rules: React.FC = () => {
 
   const [modalVisible, setModalVisible] = useState(false)
   const [editingRule, setEditingRule] = useState<AlertRule | null>(null)
-  const [form] = Form.useForm()
+  const [currentRuleData, setCurrentRuleData] = useState<AlertRule | null>(null)
+  const [activeTab, setActiveTab] = useState('builder')
+  const [testLoading, setTestLoading] = useState(false)
+  const [testResults, setTestResults] = useState<any[]>([])
 
   const columns = [
     {
@@ -92,11 +129,11 @@ const Rules: React.FC = () => {
       title: 'Условия',
       dataIndex: 'conditions',
       key: 'conditions',
-      render: (conditions: any[]) => (
+      render: (conditions: Condition[]) => (
         <div>
           {conditions.map((condition, index) => (
-            <Tag key={index} style={{ marginBottom: '4px' }}>
-              {condition.field} {condition.op} {Array.isArray(condition.value) ? condition.value.join(', ') : condition.value}
+            <Tag key={condition.id} style={{ marginBottom: '4px' }} color={!condition.enabled ? 'default' : 'blue'}>
+              {condition.field} {condition.operator} {Array.isArray(condition.value) ? condition.value.join(', ') : condition.value}
             </Tag>
           ))}
         </div>
@@ -118,8 +155,8 @@ const Rules: React.FC = () => {
     },
     {
       title: 'Перезарядка',
-      dataIndex: 'cooldown_hours',
-      key: 'cooldown_hours',
+      dataIndex: 'cooldownHours',
+      key: 'cooldownHours',
       render: (hours: number) => `${hours} ч`
     },
     {
@@ -161,13 +198,17 @@ const Rules: React.FC = () => {
 
   const handleAdd = () => {
     setEditingRule(null)
-    form.resetFields()
+    setCurrentRuleData(null)
+    setActiveTab('builder')
+    setTestResults([])
     setModalVisible(true)
   }
 
   const handleEdit = (rule: AlertRule) => {
     setEditingRule(rule)
-    form.setFieldsValue(rule)
+    setCurrentRuleData({ ...rule })
+    setActiveTab('builder')
+    setTestResults([])
     setModalVisible(true)
   }
 
@@ -175,32 +216,91 @@ const Rules: React.FC = () => {
     setRules(rules.filter(rule => rule.id !== id))
   }
 
-  const handleTest = (id: string) => {
-    // Здесь будет тестирование правила
-    console.log('Test rule:', id)
-  }
+  const handleTest = async () => {
+    if (!currentRuleData || !currentRuleData.conditions.length) {
+      return
+    }
 
-  const handleModalOk = () => {
-    form.validateFields().then(values => {
-      if (editingRule) {
-        // Редактирование
-        setRules(rules.map(rule =>
-          rule.id === editingRule.id
-            ? { ...rule, ...values }
-            : rule
-        ))
-      } else {
-        // Добавление
-        const newRule: AlertRule = {
-          id: Date.now().toString(),
-          ...values,
+    setTestLoading(true)
+    try {
+      // Симуляция запроса к API для тестирования правила
+      await new Promise(resolve => setTimeout(resolve, 1500))
+
+      // Генерация тестовых событий
+      const mockEvents = [
+        {
+          id: '1',
+          game_title: 'Громкое дело',
+          title: 'Предзаказ на Громкое дело стартовал!',
+          price: 2990,
+          discount_pct: 0,
+          store_id: 'hobbygames',
+          kind: 'preorder',
+          in_stock: false,
+          publisher: 'Студия "Игромаг"',
+          tags: ['стратегия', 'партия'],
+          created_at: new Date().toISOString()
+        },
+        {
+          id: '2',
+          game_title: 'Dune: Империум',
+          title: 'Большая скидка 25% на Dune: Империум',
+          price: 2250,
+          discount_pct: 25,
+          store_id: 'lavkaigr',
+          kind: 'discount',
+          in_stock: true,
+          publisher: 'Galaxy Games',
+          tags: ['стратегия', 'научная фантастика'],
           created_at: new Date().toISOString()
         }
-        setRules([...rules, newRule])
+      ]
+
+      setTestResults(mockEvents)
+    } catch (error) {
+      console.error('Error testing rule:', error)
+    } finally {
+      setTestLoading(false)
+    }
+  }
+
+  const handleRuleChange = (ruleData: AlertRule) => {
+    setCurrentRuleData(ruleData)
+  }
+
+  const handleSaveRule = () => {
+    if (!currentRuleData) {
+      return
+    }
+
+    if (editingRule) {
+      // Редактирование
+      setRules(rules.map(rule =>
+        rule.id === editingRule.id
+          ? { ...currentRuleData, updated_at: new Date().toISOString() }
+          : rule
+      ))
+    } else {
+      // Добавление
+      const newRule: AlertRule = {
+        ...currentRuleData,
+        id: Date.now().toString(),
+        created_at: new Date().toISOString()
       }
-      setModalVisible(false)
-      form.resetFields()
-    })
+      setRules([...rules, newRule])
+    }
+
+    setModalVisible(false)
+    setCurrentRuleData(null)
+    setTestResults([])
+  }
+
+  const handlePreviewTab = () => {
+    setActiveTab('preview')
+  }
+
+  const handleBuilderTab = () => {
+    setActiveTab('builder')
   }
 
   return (
@@ -226,72 +326,64 @@ const Rules: React.FC = () => {
       <Modal
         title={editingRule ? 'Редактировать правило' : 'Создать правило'}
         open={modalVisible}
-        onOk={handleModalOk}
         onCancel={() => setModalVisible(false)}
-        width={800}
+        width={1200}
+        footer={[
+          <Button key="cancel" icon={<CloseOutlined />} onClick={() => setModalVisible(false)}>
+            Отмена
+          </Button>,
+          <Button key="save" type="primary" icon={<SaveOutlined />} onClick={handleSaveRule} disabled={!currentRuleData}>
+            Сохранить
+          </Button>
+        ]}
       >
-        <Form
-          form={form}
-          layout="vertical"
-          initialValues={{
-            logic: 'AND',
-            conditions: [{}],
-            channels: ['webpush'],
-            cooldown_hours: 12,
-            enabled: true
-          }}
-        >
-          <Form.Item
-            name="name"
-            label="Название правила"
-            rules={[{ required: true, message: 'Введите название правила' }]}
-          >
-            <Input placeholder="Например: Скидки на стратегические игры" />
-          </Form.Item>
-
-          <Form.Item
-            name="logic"
-            label="Логика условий"
-            rules={[{ required: true }]}
-          >
-            <Select>
-              <Option value="AND">И (все условия должны быть выполнены)</Option>
-              <Option value="OR">ИЛИ (хотя бы одно условие должно быть выполнено)</Option>
-            </Select>
-          </Form.Item>
-
-          <Form.Item
-            name="channels"
-            label="Каналы уведомлений"
-            rules={[{ required: true, message: 'Выберите хотя бы один канал' }]}
-          >
-            <Select mode="multiple" placeholder="Выберите каналы">
-              <Option value="webpush">Web Push</Option>
-              <Option value="telegram">Telegram</Option>
-            </Select>
-          </Form.Item>
-
-          <Form.Item
-            name="cooldown_hours"
-            label="Перезарядка (часы)"
-            rules={[{ required: true, type: 'number', min: 1 }]}
-          >
-            <InputNumber
-              style={{ width: '100%' }}
-              min={1}
-              max={168}
-              placeholder="Минимальный интервал между уведомлениями"
+        <Tabs activeKey={activeTab} onChange={(key) => setActiveTab(key)}>
+          <TabPane tab="Конструктор" key="builder">
+            <Alert
+              message="Конструктор правил"
+              description="Создайте сложные правила с помощью визуального конструктора. Перетаскивайте условия, настраивайте поля и операторы."
+              type="info"
+              showIcon
+              style={{ marginBottom: '16px' }}
             />
-          </Form.Item>
 
-          <Form.Item
-            name="enabled"
-            label="Включено"
-            valuePropName="checked"
+            <RuleBuilder
+              rule={currentRuleData || undefined}
+              onChange={handleRuleChange}
+              onTest={handleTest}
+              onPreview={handlePreviewTab}
+              showPreview={true}
+            />
+          </TabPane>
+
+          <TabPane
+            tab={
+              <span>
+                <EyeOutlined />
+                Предпросмотр
+              </span>
+            }
+            key="preview"
           >
-            <Switch />
-          </Form.Item>
-        </Form>
+            {currentRuleData ? (
+              <Spin spinning={testLoading}>
+                <RulePreview
+                  rule={currentRuleData}
+                  testEvents={testResults}
+                  onTest={handleTest}
+                  loading={testLoading}
+                />
+              </Spin>
+            ) : (
+              <Alert
+                message="Нет данных для предпросмотра"
+                description="Сначала настройте правило во вкладке 'Конструктор'"
+                type="warning"
+                showIcon
+              />
+            )}
+          </TabPane>
+        </Tabs>
       </Modal>
     </div>
   )

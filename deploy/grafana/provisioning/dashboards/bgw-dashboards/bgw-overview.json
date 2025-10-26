@@ -1,0 +1,174 @@
+{
+  "dashboard": {
+    "id": null,
+    "title": "BGW - Обзор системы",
+    "tags": ["bgw", "overview"],
+    "timezone": "browser",
+    "panels": [
+      {
+        "id": 1,
+        "title": "Статус сервисов",
+        "type": "stat",
+        "gridPos": {"h": 8, "w": 12, "x": 0, "y": 0},
+        "targets": [
+          {
+            "expr": "up{job=\"bgw-api\"}",
+            "legendFormat": "API"
+          },
+          {
+            "expr": "redis_up",
+            "legendFormat": "Redis"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "mappings": [
+              {"options": {"0": {"text": "DOWN", "color": "red"}}, "type": "value"},
+              {"options": {"1": {"text": "UP", "color": "green"}}, "type": "value"}
+            ]
+          }
+        },
+        "options": {"colorMode": "background"}
+      },
+      {
+        "id": 2,
+        "title": "Активные агенты",
+        "type": "stat",
+        "gridPos": {"h": 8, "w": 12, "x": 12, "y": 0},
+        "targets": [
+          {
+            "expr": "count(agent_runs_total{status=\"success\"})",
+            "legendFormat": "Активные агенты"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "thresholds": {
+              "steps": [
+                {"color": "red", "value": null},
+                {"color": "yellow", "value": 1},
+                {"color": "green", "value": 5}
+              ]
+            }
+          }
+        }
+      },
+      {
+        "id": 3,
+        "title": "Запросы API в секунду",
+        "type": "graph",
+        "gridPos": {"h": 8, "w": 12, "x": 0, "y": 8},
+        "targets": [
+          {
+            "expr": "rate(api_requests_total[5m])",
+            "legendFormat": "{{method}} {{endpoint}}"
+          }
+        ],
+        "yAxes": [{"label": "Requests/sec"}],
+        "xAxis": {"mode": "time"}
+      },
+      {
+        "id": 4,
+        "title": "Время ответа API",
+        "type": "graph",
+        "gridPos": {"h": 8, "w": 12, "x": 12, "y": 8},
+        "targets": [
+          {
+            "expr": "histogram_quantile(0.50, api_request_duration_seconds_bucket)",
+            "legendFormat": "50th percentile"
+          },
+          {
+            "expr": "histogram_quantile(0.95, api_request_duration_seconds_bucket)",
+            "legendFormat": "95th percentile"
+          },
+          {
+            "expr": "histogram_quantile(0.99, api_request_duration_seconds_bucket)",
+            "legendFormat": "99th percentile"
+          }
+        ],
+        "yAxes": [{"label": "Seconds"}],
+        "xAxis": {"mode": "time"}
+      },
+      {
+        "id": 5,
+        "title": "События по типам",
+        "type": "piechart",
+        "gridPos": {"h": 8, "w": 12, "x": 0, "y": 16},
+        "targets": [
+          {
+            "expr": "sum by (kind) (events_created_total)",
+            "legendFormat": "{{kind}}"
+          }
+        ]
+      },
+      {
+        "id": 6,
+        "title": "Успешность агентов",
+        "type": "stat",
+        "gridPos": {"h": 8, "w": 12, "x": 12, "y": 16},
+        "targets": [
+          {
+            "expr": "rate(agent_runs_total{status=\"success\"}[5m]) / rate(agent_runs_total[5m]) * 100",
+            "legendFormat": "Success Rate %"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "unit": "percent",
+            "thresholds": {
+              "steps": [
+                {"color": "red", "value": null},
+                {"color": "yellow", "value": 70},
+                {"color": "green", "value": 90}
+              ]
+            }
+          }
+        }
+      },
+      {
+        "id": 7,
+        "title": "Использование дневного лимита",
+        "type": "stat",
+        "gridPos": {"h": 8, "w": 12, "x": 0, "y": 24},
+        "targets": [
+          {
+            "expr": "daily_pages_used / daily_pages_cap * 100",
+            "legendFormat": "Использовано %"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "unit": "percent",
+            "thresholds": {
+              "steps": [
+                {"color": "green", "value": null},
+                {"color": "yellow", "value": 70},
+                {"color": "red", "value": 90}
+              ]
+            }
+          }
+        }
+      },
+      {
+        "id": 8,
+        "title": "Отправленные уведомления",
+        "type": "graph",
+        "gridPos": {"h": 8, "w": 12, "x": 12, "y": 24},
+        "targets": [
+          {
+            "expr": "rate(notifications_sent_total{status=\"sent\"}[5m])",
+            "legendFormat": "Отправлено"
+          },
+          {
+            "expr": "rate(notifications_sent_total{status=\"error\"}[5m])",
+            "legendFormat": "Ошибки"
+          }
+        ],
+        "yAxes": [{"label": "Notifications/sec"}],
+        "xAxis": {"mode": "time"}
+      }
+    ],
+    "time": {"from": "now-1h", "to": "now"},
+    "refresh": "30s"
+  }
+}

@@ -62,6 +62,71 @@ async def import_agent(
     return {"message": "Агент импортирован", "agent": result}
 
 
+@router.get("/{agent_id}/stats")
+async def get_agent_stats(
+    agent_id: str,
+    days: int = 30,
+    db: Session = Depends(get_db)
+):
+    """Получить статистику агента."""
+    from datetime import datetime, timedelta
+    from sqlalchemy import func, and_
+    from app.models.raw_item import RawItem
+    from app.models.listing_event import ListingEvent
+
+    # Проверяем существование агента
+    agent = agent_service.get_agent(db, agent_id)
+    if not agent:
+        raise HTTPException(status_code=404, detail="Агент не найден")
+
+    # Вычисляем дату начала периода
+    since_date = datetime.utcnow() - timedelta(days=days)
+
+    # Статистика по страницам
+    pages_stats = db.query(RawItem).filter(
+        and_(
+            RawItem.source_id == agent_id,
+            RawItem.fetched_at >= since_date
+        )
+    ).all()
+
+    # Статистика по событиям
+    events_stats = db.query(ListingEvent).filter(
+        and_(
+            ListingEvent.source_id == agent_id,
+            ListingEvent.created_at >= since_date
+        )
+    ).all()
+
+    # Последний запуск
+    last_run = db.query(RawItem).filter(
+        RawItem.source_id == agent_id
+    ).order_by(RawItem.fetched_at.desc()).first()
+
+    # Уникальные страницы (для расчета успешности)
+    unique_pages = db.query(func.count(func.distinct(RawItem.hash))).filter(
+        and_(
+            RawItem.source_id == agent_id,
+            RawItem.fetched_at >= since_date
+        )
+    ).scalar() or 0
+
+    # Успешность в процентах
+    success_rate = (unique_pages / max(len(pages_stats), 1)) * 100 if pages_stats else 100
+
+    return {
+        "agent_id": agent_id,
+        "days": days,
+        "last_run": last_run.fetched_at.isoformat() if last_run else None,
+        "pages_fetched": len(pages_stats),
+        "events_generated": len(events_stats),
+        "unique_pages": unique_pages,
+        "success_rate": round(success_rate, 1),
+        "avg_pages_per_day": round(len(pages_stats) / days, 1) if days > 0 else 0,
+        "avg_events_per_day": round(len(events_stats) / days, 1) if days > 0 else 0
+    }
+
+
 @router.get("/{agent_id}/export")
 async def export_agent(
     agent_id: str,

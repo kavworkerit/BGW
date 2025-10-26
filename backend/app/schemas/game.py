@@ -1,6 +1,7 @@
 from pydantic import BaseModel, Field
 from typing import List, Optional
 from datetime import datetime
+from uuid import UUID
 
 
 class GameBase(BaseModel):
@@ -24,7 +25,7 @@ class GameUpdate(BaseModel):
 
 
 class Game(GameBase):
-    id: str
+    id: UUID
     created_at: datetime
     updated_at: Optional[datetime] = None
 

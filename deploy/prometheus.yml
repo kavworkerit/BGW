@@ -1,0 +1,162 @@
+# Prometheus конфигурация для мониторинга BGW
+# Разместить в /etc/prometheus/prometheus.yml
+
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+  scrape_timeout: 10s
+
+rule_files:
+  - "bgw_rules.yml"
+
+alerting:
+  alertmanagers:
+    - static_configs:
+        - targets:
+          - alertmanager:9093
+
+scrape_configs:
+  # Метрики BGW API
+  - job_name: 'bgw-api'
+    static_configs:
+      - targets: ['api:8000']
+    metrics_path: '/api/metrics/prometheus'
+    scrape_interval: 30s
+    scrape_timeout: 10s
+    params:
+      format: ['prometheus']
+    scheme: http
+    dns_lookup_refresh_interval: 30s
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: __param_target
+        regex: '([^:]+)(?::\\d+)?;?(.*)'
+        replacement: '${1}:${2}'
+      - source_labels: [__address__]
+        target_label: instance
+        regex: '([^:]+)(?::\\d+)?;?(.*)'
+        replacement: '${1}'
+
+  # Health checks
+  - job_name: 'bgw-health'
+    static_configs:
+      - targets: ['api:8000']
+    metrics_path: '/api/metrics/health'
+    scrape_interval: 60s
+    scrape_timeout: 5s
+
+  # Системные метрики (node-exporter если нужно)
+  - job_name: 'node-exporter'
+    static_configs:
+      - targets: ['api:9100']
+    scrape_interval: 30s
+
+  # Redis метрики
+  - job_name: 'bgw-redis'
+    static_configs:
+      - targets: ['redis:6379']
+    scrape_interval: 30s
+
+  # PostgreSQL метрики
+  - job_name: 'bgw-postgres'
+    static_configs:
+      - targets: ['postgres:5432']
+    scrape_interval: 30s
+
+  # Celery метрики
+  - job_name: 'bgw-celery'
+    static_configs:
+      - targets: ['api:9091']
+    scrape_interval: 30s
+
+# Правила алертов
+alerting_rules:
+  - name: bgw_rules.yml
+    rules:
+      # Алерты при неработоспособности API
+      - alert: APIUnhealthy
+        expr: up{job="bgw-api"} == 0
+        for: 5m
+        labels:
+          severity: critical
+          service: bgw-api
+        annotations:
+          summary: "BGW API is down"
+          description: "BGW API has been down for more than 5 minutes"
+
+      # Алерты при высокой загрузке
+      - alert: HighErrorRate
+        expr: rate(api_requests_total{status=~"5.."}[5m]) > 0.1
+        for: 2m
+        labels:
+          severity: warning
+          service: bgw-api
+        annotations:
+          summary: "High error rate in BGW API"
+          description: "Error rate is {{ $value }} errors per second"
+
+      # Алерты при медленных запросах
+      - alert: SlowAPIResponse
+        expr: histogram_quantile(0.95, api_response_time_seconds) > 2.0
+        for: 5m
+        labels:
+          severity: warning
+          service: bgw-api
+        annotations:
+          summary: "Slow API responses"
+          description: "95th percentile response time is {{ $value }} seconds"
+
+      # Алерты при большом количестве ошибок уведомлений
+      - alert: NotificationErrors
+        expr: rate(notifications_sent_total{status="error"}[5m]) > 0.05
+        for: 3m
+        labels:
+          severity: warning
+          service: bgw-notifications
+        annotations:
+          summary: "High notification error rate"
+          description: "Notification error rate is {{ $value }} per second"
+
+      # Алерты при остановке агентов
+      - alert: AgentsStopped
+        expr: agent_runs_total == 0
+        for: 10m
+        labels:
+          severity: critical
+          service: bgw-agents
+        annotations:
+          summary: "No agent runs detected"
+          description: "No agent runs have been detected in the last 10 minutes"
+
+      # Алерты при достижении лимита страниц
+      - alert: DailyPageLimitReached
+        expr: (daily_pages_used / daily_pages_cap) > 0.9
+        for: 5m
+        labels:
+          severity: warning
+          service: bgw-agents
+        annotations:
+          summary: "Daily page limit almost reached"
+          description: "Daily page usage is {{ $value | humanizePercentage }} of limit"
+
+      # Алерты при проблемах с БД
+      - alert: DatabaseConnectionIssues
+        expr: database_connections_active < 1
+        for: 2m
+        labels:
+          severity: critical
+          service: bgw-database
+        annotations:
+          summary: "Database connection issues"
+          description: "Database has {{ $value }} active connections"
+
+      # Алерты при проблемах с Redis
+      - alert: RedisConnectionIssues
+        expr: redis_connections_active < 1
+        for: 2m
+        labels:
+          severity: warning
+          service: bgw-redis
+        annotations:
+          summary: "Redis connection issues"
+          description: "Redis has {{ $value }} active connections"

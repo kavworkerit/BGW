@@ -153,7 +153,7 @@ class HTMLAgent(BaseAgent):
                 continue
 
 
-class AP Agent(BaseAgent):
+class Agent(BaseAgent):
     """Агент для работы с API."""
 
     TYPE = "api"
@@ -162,3 +162,65 @@ class AP Agent(BaseAgent):
         """Получить данные из API."""
         # TODO: Implement API fetching logic
         pass
+
+
+class HeadlessAgent(BaseAgent):
+    """Агент для работы с динамическими сайтами через Playwright."""
+
+    TYPE = "headless"
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.start_urls = self.config.get('start_urls', [])
+        self.selectors = self.config.get('selectors', {})
+        self.wait_for = self.config.get('wait_for', None)
+        self.screenshot = self.config.get('screenshot', False)
+
+    async def fetch(self) -> AsyncGenerator[Fetched, None]:
+        """Получить HTML через Playwright."""
+        from playwright.async_api import async_playwright
+
+        async with async_playwright() as p:
+            browser = await p.chromium.launch(headless=True)
+            context = await browser.new_context(
+                user_agent='BoardGamesMonitor/1.0',
+                viewport={'width': 1920, 'height': 1080}
+            )
+
+            for url in self.start_urls:
+                try:
+                    page = await context.new_page()
+                    await page.goto(url, wait_until='networkidle')
+
+                    # Ждем появления элементов если нужно
+                    if self.wait_for:
+                        await page.wait_for_selector(self.wait_for, timeout=10000)
+
+                    # Делаем скриншот если нужно
+                    if self.screenshot:
+                        screenshot_path = f"screenshot_{int(datetime.now().timestamp())}.png"
+                        await page.screenshot(path=screenshot_path)
+                        logger.info(f"Screenshot saved: {screenshot_path}")
+
+                    # Получаем HTML
+                    body = await page.content()
+
+                    yield Fetched(
+                        url=url,
+                        status=200,
+                        body=body,
+                        headers={},  # Playwright headers are complex
+                        fetched_at=datetime.now()
+                    )
+
+                    await page.close()
+
+                    # Учитываем rate limiting
+                    if 'rps' in self.rate_limit:
+                        await asyncio.sleep(1.0 / self.rate_limit['rps'])
+
+                except Exception as e:
+                    logger.error(f"Error fetching {url} with Playwright: {e}")
+                    continue
+
+            await browser.close()

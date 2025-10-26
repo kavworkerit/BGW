@@ -18,6 +18,7 @@ import {
   DatabaseOutlined,
   RobotOutlined
 } from '@ant-design/icons'
+import LLMTester from '../components/LLMTester'
 
 const { Title, Text } = Typography
 const { TabPane } = Tabs
@@ -289,6 +290,10 @@ const Settings: React.FC = () => {
               </Button>
             </Form>
           </Card>
+        </TabPane>
+
+        <TabPane tab={<span><RobotOutlined />LLM (Ollama)</span>} key="llm">
+          <LLMTester />
         </TabPane>
       </Tabs>
     </div>

@@ -3,12 +3,14 @@ uvicorn[standard]==0.24.0
 sqlalchemy==2.0.23
 alembic==1.12.1
 psycopg2-binary==2.9.9
+asyncpg==0.29.0
 celery[redis]==5.3.4
-redis==5.0.1
+redis==4.6.0
 pydantic==2.5.0
 pydantic-settings==2.1.0
 minio==7.2.0
 requests==2.31.0
+aiohttp==3.9.1
 beautifulsoup4==4.12.2
 lxml==4.9.3
 selenium==4.16.0
@@ -17,7 +19,7 @@ aiofiles==23.2.1
 python-multipart==0.0.6
 python-jose[cryptography]==3.3.0
 passlib[bcrypt]==1.7.4
-python-pushover==0.4.0
+# python-pushover==0.4.0  # Проблемный пакет, закомментирован
 httpx==0.25.2
 vcrpy==6.0.1
 prometheus-client==0.19.0
@@ -26,3 +28,14 @@ python-dateutil==2.8.2
 pytz==2023.3
 fuzzywuzzy==0.18.0
 python-levenshtein==0.23.0
+sqlalchemy-utils==0.41.1
+py-vapid==1.9.0
+pywebpush==1.14.0
+
+# Test dependencies
+pytest==7.4.3
+pytest-asyncio==0.21.1
+pytest-cov==4.1.0
+pytest-mock==3.12.0
+factory-boy==3.3.0
+faker==20.1.0

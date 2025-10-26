@@ -1,0 +1,127 @@
+{
+  "dashboard": {
+    "id": null,
+    "title": "BGW - Мониторинг агентов",
+    "tags": ["bgw", "agents"],
+    "timezone": "browser",
+    "panels": [
+      {
+        "id": 1,
+        "title": "Статус агентов",
+        "type": "table",
+        "gridPos": {"h": 8, "w": 24, "x": 0, "y": 0},
+        "targets": [
+          {
+            "expr": "agent_runs_total",
+            "legendFormat": "{{agent_id}}",
+            "format": "table"
+          }
+        ],
+        "transformations": [
+          {
+            "id": "groupBy",
+            "options": {
+              "fields": ["agent_id", "status"],
+              "operation": "groupby"
+            }
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "custom": {
+              "align": "auto",
+              "cellOptions": {
+                "type": "auto"
+              }
+            }
+          }
+        }
+      },
+      {
+        "id": 2,
+        "title": "Запуски агентов",
+        "type": "graph",
+        "gridPos": {"h": 8, "w": 12, "x": 0, "y": 8},
+        "targets": [
+          {
+            "expr": "increase(agent_runs_total{status=\"success\"}[5m])",
+            "legendFormat": "{{agent_id}} - Успешно"
+          },
+          {
+            "expr": "increase(agent_runs_total{status=\"error\"}[5m])",
+            "legendFormat": "{{agent_id}} - Ошибки"
+          }
+        ],
+        "yAxes": [{"label": "Runs per 5min"}],
+        "xAxis": {"mode": "time"}
+      },
+      {
+        "id": 3,
+        "title": "Время выполнения агентов",
+        "type": "graph",
+        "gridPos": {"h": 8, "w": 12, "x": 12, "y": 8},
+        "targets": [
+          {
+            "expr": "histogram_quantile(0.50, agent_duration_seconds_bucket)",
+            "legendFormat": "50th percentile"
+          },
+          {
+            "expr": "histogram_quantile(0.95, agent_duration_seconds_bucket)",
+            "legendFormat": "95th percentile"
+          }
+        ],
+        "yAxes": [{"label": "Seconds"}],
+        "xAxis": {"mode": "time"}
+      },
+      {
+        "id": 4,
+        "title": "Страницы, обработанные агентами",
+        "type": "graph",
+        "gridPos": {"h": 8, "w": 12, "x": 0, "y": 16},
+        "targets": [
+          {
+            "expr": "increase(agent_pages_fetched_total[5m])",
+            "legendFormat": "{{agent_id}}"
+          }
+        ],
+        "yAxes": [{"label": "Pages per 5min"}],
+        "xAxis": {"mode": "time"}
+      },
+      {
+        "id": 5,
+        "title": "События, созданные агентами",
+        "type": "graph",
+        "gridPos": {"h": 8, "w": 12, "x": 12, "y": 16},
+        "targets": [
+          {
+            "expr": "increase(events_created_total[5m])",
+            "legendFormat": "{{agent_id}}"
+          }
+        ],
+        "yAxes": [{"label": "Events per 5min"}],
+        "xAxis": {"mode": "time"}
+      },
+      {
+        "id": 6,
+        "title": "Успешность по агентам",
+        "type": "heatmap",
+        "gridPos": {"h": 8, "w": 24, "x": 0, "y": 24},
+        "targets": [
+          {
+            "expr": "rate(agent_runs_total{status=\"success\"}[5m]) / rate(agent_runs_total[5m]) * 100",
+            "legendFormat": "{{agent_id}}"
+          }
+        ],
+        "options": {
+          "heatmap": {
+            "colorScale": {
+              "mode": "opacity"
+            }
+          }
+        }
+      }
+    ],
+    "time": {"from": "now-1h", "to": "now"},
+    "refresh": "30s"
+  }
+}

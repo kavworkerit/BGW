@@ -1,5 +1,7 @@
-from sqlalchemy import Column, String, DateTime, Numeric, Boolean, Text, ForeignKey, Enum
+from sqlalchemy import Column, String, DateTime, Numeric, Boolean, Text, ForeignKey, Enum, JSON
 from sqlalchemy.dialects.postgresql import UUID, JSONB
+from sqlalchemy_utils import JSONType
+from sqlalchemy.orm import relationship
 from .base import BaseModel
 import enum
 
@@ -15,7 +17,7 @@ class EventKind(enum.Enum):
 class ListingEvent(BaseModel):
     __tablename__ = "listing_event"
 
-    game_id = Column(String, ForeignKey("game.id"), nullable=True, index=True)
+    game_id = Column(UUID(as_uuid=True), ForeignKey("game.id"), nullable=True, index=True)
     store_id = Column(String, ForeignKey("store.id"), nullable=True, index=True)
     kind = Column(Enum(EventKind), nullable=False, index=True)
     title = Column(String(500), nullable=True)
@@ -29,7 +31,11 @@ class ListingEvent(BaseModel):
     url = Column(Text, nullable=True)
     source_id = Column(String, ForeignKey("source_agent.id"), nullable=True)
     signature_hash = Column(String(64), nullable=False, unique=True, index=True)
-    meta = Column(JSONB, default={})
+    # Используем JSONType для кросс-базовой совместимости
+    meta = Column(JSONType, default=dict)
+
+    # Relationships
+    notifications = relationship("Notification", back_populates="event")
 
     def __repr__(self):
         return f"<ListingEvent(title='{self.title}', kind='{self.kind.value}')>"

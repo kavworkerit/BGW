@@ -79,4 +79,90 @@ class LavkaIgrShopAgent(HTMLAgent):
 
 class LavkaIgrProjectsAgent(LavkaIgrShopAgent):
     """Агент для мониторинга проектов Лавка Игр."""
-    pass
+
+    async def parse(self, fetched: Fetched) -> AsyncGenerator[ListingEventDraft, None]:
+        """Извлечь события из HTML для проектов."""
+        soup = BeautifulSoup(fetched.body, 'html.parser')
+
+        # Ищем карточки проектов
+        items = soup.select(self.selectors.get('item', '.project-card, .product-card, .item'))
+
+        for item in items:
+            try:
+                title_elem = item.select_one(self.selectors.get('title', '.project-title, .product-card__title, .title'))
+                price_elem = item.select_one(self.selectors.get('price', '.price, .project-price'))
+                url_elem = item.select_one(self.selectors.get('url', 'a'))
+                badge_elem = item.select_one(self.selectors.get('badge', '.badge, .label, .status'))
+                stock_elem = item.select_one(self.selectors.get('stock', '.stock-status, .availability'))
+                status_elem = item.select_one(self.selectors.get('status', '.project-status'))
+
+                if not title_elem:
+                    continue
+
+                title = title_elem.get_text(strip=True)
+                url = url_elem.get('href') if url_elem else None
+
+                # Определяем тип события
+                kind = 'announce'  # по умолчанию для проектов
+                discount_pct = None
+
+                # Проверяем статус проекта
+                if status_elem:
+                    status_text = status_elem.get_text(strip=True).lower()
+                    if any(word in status_text for word in ['финансирование', 'сбор средств', 'kickstarter']):
+                        kind = 'announce'
+                    elif any(word in status_text for word in ['доступен', 'в продаже', 'released']):
+                        kind = 'release'
+
+                if badge_elem:
+                    badge_text = badge_elem.get_text(strip=True).lower()
+                    if any(word in badge_text for word in ['предзаказ', 'preorder']):
+                        kind = 'preorder'
+                    elif any(word in badge_text for word in ['новинка', 'new']):
+                        kind = 'release'
+                    elif any(word in badge_text for word in ['скидка', 'sale', 'акция']):
+                        kind = 'discount'
+                        # Ищем процент скидки
+                        discount_match = re.search(r'(\d+)%', badge_text)
+                        if discount_match:
+                            discount_pct = float(discount_match.group(1))
+
+                # Извлекаем цену
+                price = None
+                if price_elem:
+                    price_text = price_elem.get_text(strip=True)
+                    # Ищем цену
+                    price_match = re.search(r'(\d[\d\s]*)\s*₽', price_text)
+                    if price_match:
+                        price = float(price_match.group(1).replace(' ', ''))
+
+                    # Ищем скидку в тексте цены
+                    discount_match = re.search(r'-(\d+)%', price_text)
+                    if discount_match:
+                        discount_pct = float(discount_match.group(1))
+
+                # Проверяем наличие
+                in_stock = True
+                if stock_elem:
+                    stock_text = stock_elem.get_text(strip=True).lower()
+                    if any(word in stock_text for word in ['нет в наличии', 'под заказ', 'закончился']):
+                        in_stock = False
+
+                # Дополнительная проверка по тексту проекта
+                item_text = item.get_text().lower()
+                if any(word in item_text for word in ['kickstarter', 'краудфандинг', 'сбор средств']):
+                    kind = 'announce'
+
+                yield ListingEventDraft(
+                    title=title,
+                    url=f"https://www.lavkaigr.ru{url}" if url and not url.startswith('http') else url,
+                    store_id='lavkaigr_projects',
+                    kind=kind,
+                    price=price,
+                    discount_pct=discount_pct,
+                    in_stock=in_stock
+                )
+
+            except Exception as e:
+                print(f"Error parsing project item: {e}")
+                continue

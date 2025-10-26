@@ -1,0 +1,193 @@
+# Правила алертов для BGW
+# Разместить в /etc/prometheus/bgw_rules.yml
+
+groups:
+  - name: bgw_alerts
+    rules:
+      # Алерты производительности агентов
+      - alert: AgentRunFailure
+        expr: increase(agent_runs_total{status!="success"}[5m]) > 3
+        for: 2m
+        labels:
+          severity: warning
+          team: bgw-agents
+        annotations:
+          summary: "Agent run failures detected"
+          description: "{{ $labels.agent_id }} has failed {{ $value }} times in the last 5 minutes"
+
+      - alert: AgentLongRunningTime
+        expr: histogram_quantile(0.95, agent_duration_seconds) > 300
+        for: 5m
+        labels:
+          severity: warning
+          team: bgw-agents
+        annotations:
+          summary: "Agent taking too long to run"
+          description: "95th percentile of agent run time is {{ $value }} seconds"
+
+      # Алерты для API
+      - alert: APILatencySpike
+        expr: histogram_quantile(0.95, rate(api_response_time_seconds_bucket[5m])) > 1.5 * histogram_quantile(0.95, rate(api_response_time_seconds_bucket[10m]))
+        for: 3m
+        labels:
+          severity: critical
+          team: bgw-api
+        annotations:
+          summary: "API latency spike detected"
+          description: "95th percentile latency increased by 50% in the last 3 minutes"
+
+      - alert: APIErrorSpike
+        expr: rate(api_requests_total{status=~"5.."}[5m]) > 0.1 * rate(api_requests_total{status=~"5.."}[10m])
+        for: 2m
+        labels:
+          severity: critical
+          team: bgw-api
+        annotations:
+          summary: "API error rate spike"
+          description: "Error rate is {{ $value | humanizePercentage }} higher than baseline"
+
+      # Алерты для уведомлений
+      - alert: NotificationDeliveryFailure
+        expr: (rate(notifications_sent_total{status="error"}[5m]) / rate(notifications_sent_total[5m])) > 0.1
+        for: 5m
+        labels:
+          severity: warning
+          team: bgw-notifications
+        annotations:
+          summary: "High notification delivery failure rate"
+          description: "{{ $value | humanizePercentage }} of notifications are failing to deliver"
+
+      - alert: WebPushDeliveryDrop
+        expr: rate(notifications_delivered_total{channel="webpush"}[5m]) / rate(notifications_sent_total{channel="webpush"}[5m]) < 0.9
+        for: 3m
+        labels:
+          severity: warning
+          team: bgw-notifications
+        annotations:
+          summary: "Web Push delivery rate dropped"
+          description: "Web Push delivery rate is {{ $value | humanizePercentage }}"
+
+      # Алерты для сбора данных
+      - alert: LowDataCollectionRate
+        expr: rate(agent_pages_fetched_total[1h]) < 10
+        for: 15m
+        labels:
+          severity: warning
+          team: bgw-scraping
+        annotations:
+          summary: "Low data collection rate"
+          description: "Only {{ $value }} pages fetched per hour"
+
+      - alert: NoEventsCreated
+        expr: increase(events_created_total[2h]) == 0
+        for: 10m
+        labels:
+          severity: critical
+          team: bgw-scraping
+        annotations:
+          summary: "No events created in 2 hours"
+          description: "Data scraping is working but not creating events"
+
+      # Алерты для использования ресурсов
+      - alert: HighMemoryUsage
+        expr: process_resident_memory_bytes / 1024 / 1024 > 500
+        for: 5m
+        labels:
+          severity: warning
+          team: bgw-system
+        annotations:
+          summary: "High memory usage detected"
+          description: "Memory usage is {{ $value }}MB"
+
+      - alert: DatabaseConnectionPoolExhaustion
+        expr: database_connections_active / database_connections_limit > 0.8
+        for: 2m
+        labels:
+          severity: critical
+          team: bgw-database
+        annotations:
+          summary: "Database connection pool nearly exhausted"
+          description: "{{ $value | humanizePercentage }} of database connections are used"
+
+      - alert: DailyQuotaExceeded
+        expr: daily_pages_used > daily_pages_cap
+        for: 1m
+        labels:
+          severity: warning
+          team: bgw-quota
+        annotations:
+          summary: "Daily page quota exceeded"
+          description: "{{ $value }} pages used vs {{ query \"daily_pages_cap\" }} limit"
+
+      # Алерты работоспособности системы
+      - alert: ServiceDown
+        expr: up{job="bgw-api"} == 0
+        for: 1m
+        labels:
+          severity: critical
+          team: bgw-system
+        annotations:
+          summary: "BGW service is down"
+          description: "BGW API has been down for more than 1 minute"
+
+      - alert: HighDiskUsage
+        expr: (node_filesystem_avail_bytes{mountpoint="/"} / node_filesystem_size_bytes{mountpoint="/"}) < 0.1
+        for: 5m
+        labels:
+          severity: warning
+          team: bgw-system
+        annotations:
+          summary: "Low disk space"
+          description: "Only {{ $value | humanizePercentage }} disk space available"
+
+      # Алерты для Celery
+      - alert: CeleryQueueBacklog
+        expr: celery_queue_length > 100
+        for: 5m
+        labels:
+          severity: warning
+          team: bgw-tasks
+        annotations:
+          summary: "Celery queue backlog growing"
+          description: "Queue has {{ $value }} pending tasks"
+
+      - alert: CeleryWorkerDown
+        expr: up{job="bgw-celery"} == 0
+        for: 2m
+        labels:
+          severity: critical
+          team: bgw-tasks
+        annotations:
+          summary: "Celery workers are down"
+          description: "No active Celery workers detected"
+
+      # Алерты мониторинга бизнес-метрик
+      - alert: SuddenDropInEvents
+        expr: rate(events_created_total[1h]) < 0.5 * rate(events_created_total[6h])
+        for: 10m
+        labels:
+          severity: warning
+          team: bgw-business
+        annotations:
+          summary: "Sudden drop in event creation rate"
+          description: "Event creation rate dropped by 50% compared to 6-hour average"
+
+      - alert: HighDiscountRateEvents
+        expr: increase(events_created_total{event_type="discount"}[1h]) > 50
+        for: 5m
+        labels:
+          severity: info
+          team: bgw-business
+        annotations:
+          summary: "High discount activity detected"
+          description: "{{ $value }} discount events created in the last hour"
+
+      - alert: RuleTriggerSpike
+        expr: rate(notifications_delivered_total[5m]) > 5 * rate(notifications_delivered_total[1h])
+        for: 3m
+        labels:
+          severity: info
+          team: bgw-business
+        annotations:
+          summary: "Unusual notification spike"
+          description: "Notification rate is 5x higher than hourly average"

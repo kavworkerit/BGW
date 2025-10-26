@@ -1,16 +1,30 @@
-from sqlalchemy import Column, String, ARRAY
-from sqlalchemy.dialects.postgresql import UUID
+from sqlalchemy import Column, String, DateTime, Text, Integer, Float, JSON
+from sqlalchemy.dialects.postgresql import UUID, ARRAY
+from sqlalchemy_utils import JSONType
 from .base import BaseModel
-
+import uuid
 
 class Game(BaseModel):
     __tablename__ = "game"
 
     title = Column(String(500), nullable=False, index=True)
-    synonyms = Column(ARRAY(String), default=[])
-    bgg_id = Column(String(50), unique=True, nullable=True)
-    publisher = Column(String(200), nullable=True)
-    tags = Column(ARRAY(String), default=[])
+    # Используем JSON для кросс-базовой совместимости
+    synonyms = Column(JSONType, default=list)
+    bgg_id = Column(String(50), unique=True, nullable=True, index=True)
+    publisher = Column(String(200), nullable=True, index=True)
+    tags = Column(JSONType, default=list)
+    description = Column(Text, nullable=True)
+    min_players = Column(Integer, nullable=True)
+    max_players = Column(Integer, nullable=True)
+    min_playtime = Column(Integer, nullable=True)  # минут
+    max_playtime = Column(Integer, nullable=True)  # минут
+    year_published = Column(Integer, nullable=True)
+    language = Column(String(10), default="RU")  # RU, EN, etc.
+    complexity = Column(Float, nullable=True)  # 1-5
+    image_url = Column(String(500), nullable=True)
+    rating_bgg = Column(Float, nullable=True)  # рейтинг BGG
+    rating_users = Column(Float, nullable=True)  # пользовательский рейтинг
+    weight = Column(Float, nullable=True)  # вес/сложность
 
     def __repr__(self):
-        return f"<Game(title='{self.title}')>"
+        return f"<Game(title='{self.title}', publisher='{self.publisher}')>"

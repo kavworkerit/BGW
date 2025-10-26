@@ -1,9 +1,10 @@
 """Сервис для сопоставления игр."""
-from typing import Optional, List
+from typing import Optional, List, Dict, Any
 from sqlalchemy.orm import Session
 from sqlalchemy import or_
 from app.models.game import Game
 from fuzzywuzzy import fuzz
+from app.services.llm_service import llm_service
 import re
 import logging
 
@@ -24,8 +25,18 @@ class GameMatchingService:
         # Символы для удаления
         self.remove_chars = '.,;:!?()[]{}"\'-_–—'
 
-    async def match_game(self, db: Session, title: str, threshold: float = 0.75) -> Optional[Game]:
+    async def match_game(self, db: Session, title: str, threshold: float = 0.75, use_llm: bool = True) -> Optional[Game]:
         """Найти соответствующую игру в базе данных."""
+        # Пробуем нормализовать через LLM если доступно
+        if use_llm and await llm_service.is_available():
+            try:
+                normalized_title = await llm_service.normalize_game_title(title)
+                if normalized_title:
+                    title = normalized_title
+                    logger.info(f"LLM normalized title: {title}")
+            except Exception as e:
+                logger.warning(f"LLM normalization failed: {e}")
+
         # Нормализуем название
         normalized_title = self._normalize_title(title)
 
@@ -44,8 +55,65 @@ class GameMatchingService:
         if fuzzy_match:
             return fuzzy_match
 
+        # Если fuzzy matching не удался и доступен LLM, пробуем LLM матчинг
+        if use_llm and await llm_service.is_available():
+            llm_match = await self._llm_match_game(db, title)
+            if llm_match:
+                return llm_match
+
         # Если ничего не найдено, возвращаем None
         logger.info(f"No match found for title: {title}")
+        return None
+
+    async def _llm_match_game(self, db: Session, title: str) -> Optional[Game]:
+        """Пробует найти игру с помощью LLM."""
+        try:
+            # Получаем все игры для анализа LLM
+            games = db.query(Game).limit(100).all()  # ограничиваем для производительности
+
+            if not games:
+                return None
+
+            # Формируем список игр для LLM
+            games_list = []
+            for game in games:
+                game_info = f"{game.title}"
+                if game.synonyms:
+                    game_info += f" (синонимы: {', '.join(game.synonyms)})"
+                if game.publisher:
+                    game_info += f" - {game.publisher}"
+                games_list.append(game_info)
+
+            games_text = "\n".join(games_list)
+
+            prompt = f"""
+Найди наиболее подходящую игру для названия: "{title}"
+
+Список игр в базе:
+{games_text}
+
+Ответ в формате JSON:
+{{"match_index": 0, "confidence": 0.95}}
+
+Где match_index - индекс игры в списке (от 0), confidence - уверенность от 0 до 1.
+Если подходящей игры нет, верни {{"match_index": -1, "confidence": 0}}.
+"""
+
+            result = await llm_service._call_llm(prompt)
+            if result:
+                parsed = llm_service._parse_json_response(result)
+                if parsed and isinstance(parsed, dict):
+                    match_index = parsed.get("match_index", -1)
+                    confidence = parsed.get("confidence", 0)
+
+                    if match_index >= 0 and confidence > 0.7 and match_index < len(games):
+                        matched_game = games[match_index]
+                        logger.info(f"LLM found match: {matched_game.title} (confidence: {confidence})")
+                        return matched_game
+
+        except Exception as e:
+            logger.error(f"LLM matching failed: {e}")
+
         return None
 
     def _normalize_title(self, title: str) -> str:

@@ -1,5 +1,4 @@
 """Сервис для обработки событий."""
-import hashlib
 from datetime import datetime, timedelta
 from typing import Optional, List
 from sqlalchemy.orm import Session
@@ -10,8 +9,9 @@ from app.models.listing_event import ListingEvent, EventKind
 from app.models.price_history import PriceHistory
 from app.models.alert_rule import AlertRule
 from app.agents.base import ListingEventDraft
-from app.services.notification_service import notification_service
+from app.services.notification_service import get_notification_service
 from app.services.game_matching_service import game_matching_service
+from app.services.deduplication_service import calculate_signature_hash, is_duplicate_event
 import logging
 
 logger = logging.getLogger(__name__)
@@ -37,11 +37,19 @@ class EventService:
                     db.commit()
                     db.refresh(store)
 
-            # Вычисляем signature_hash для дедупликации
-            signature_hash = self._compute_signature_hash(draft)
+            # Подготавливаем данные для вычисления хеша
+            event_data = {
+                'title': draft.title,
+                'store_id': store_id,
+                'edition': draft.edition,
+                'price': draft.price
+            }
 
-            # Проверяем на дубликаты
-            existing = self._find_duplicate(db, signature_hash)
+            # Вычисляем signature_hash для дедупликации
+            signature_hash = calculate_signature_hash(event_data)
+
+            # Проверяем на дубликаты (расширенный период 72 часа)
+            existing = is_duplicate_event(db, signature_hash, hours_back=72)
             if existing:
                 logger.debug(f"Duplicate event found: {draft.title}")
                 return None
@@ -98,38 +106,7 @@ class EventService:
             except Exception as e:
                 logger.error(f"Error evaluating rule {rule.id}: {e}")
 
-    def _compute_signature_hash(self, draft: ListingEventDraft) -> str:
-        """Вычислить хэш подписи для дедупликации."""
-        # Округляем цену до целых
-        price_str = "null" if draft.price is None else str(int(round(draft.price)))
-
-        # Берем время с точностью до 24 часов
-        time_bucket = datetime.now().replace(hour=0, minute=0, second=0, microsecond=0)
-
-        # Нормализуем текст
-        title_normalized = draft.title.lower().strip()
-
-        components = [
-            title_normalized,
-            draft.store_id or "",
-            draft.edition or "",
-            price_str,
-            time_bucket.isoformat()
-        ]
-
-        base = "|".join(components)
-        return hashlib.sha256(base.encode()).hexdigest()
-
-    def _find_duplicate(self, db: Session, signature_hash: str, hours: int = 24) -> Optional[ListingEvent]:
-        """Найти дубликат события по хэшу."""
-        since = datetime.now() - timedelta(hours=hours)
-        return db.query(ListingEvent).filter(
-            and_(
-                ListingEvent.signature_hash == signature_hash,
-                ListingEvent.created_at >= since
-            )
-        ).first()
-
+  
     async def _evaluate_rule(self, db: Session, rule: AlertRule, event: ListingEvent) -> bool:
         """Оценить правило для события."""
         conditions = rule.conditions
@@ -214,6 +191,7 @@ class EventService:
         }
 
         # Отправляем через все каналы правила
+        notification_service = get_notification_service(db)
         results = await notification_service.send_to_multiple_channels(
             rule.channels,
             notification_data

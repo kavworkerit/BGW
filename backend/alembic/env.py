@@ -1,6 +1,6 @@
 import asyncio
 from logging.config import fileConfig
-from sqlalchemy import pool
+from sqlalchemy import pool, text
 from sqlalchemy.engine import Connection
 from sqlalchemy.ext.asyncio import async_engine_from_config
 from alembic import context
@@ -43,7 +43,7 @@ def do_run_migrations(connection: Connection) -> None:
 
     with context.begin_transaction():
         # Создаем расширение TimescaleDB если его нет
-        connection.execute("CREATE EXTENSION IF NOT EXISTS timescaledb;")
+        connection.execute(text("CREATE EXTENSION IF NOT EXISTS timescaledb;"))
         context.run_migrations()
 
 

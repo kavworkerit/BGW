@@ -1,0 +1,489 @@
+{
+  "annotations": {
+    "list": []
+  },
+  "editable": true,
+  "gnetId": null,
+  "graphTooltip": 0,
+  "id": null,
+  "links": [],
+  "panels": [
+    {
+      "datasource": "Prometheus",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {}
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 0,
+        "w": 0,
+        "x": 0,
+        "y": 0
+      },
+      "id": 1,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "area",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "reduceOptions": [
+          {
+            "calcs": [
+              "lastNotNull"
+            ],
+            "fields": "",
+            "values": false,
+            "calcs": [
+              "lastNotNull"
+            ]
+          }
+        ],
+        "textMode": "auto"
+      },
+      "pluginVersion": "8.0.0",
+      "targets": [
+        {
+          "expr": "system_health",
+          "legendFormat": "Состояние системы",
+          "refId": "A"
+        }
+      ],
+      "title": "Здоровье системы",
+      "type": "stat",
+      "transparent": false
+    },
+    {
+      "datasource": "Prometheus",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {}
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 1,
+        "w": 0,
+        "x": 12,
+        "y": 0
+      },
+      "id": 2,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "area",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "reduceOptions": [
+          {
+            "calcs": [
+              "lastNotNull"
+            ],
+            "fields": "",
+            "values": false,
+            "calcs": [
+              "lastNotNull"
+            ]
+          }
+        ],
+        "textMode": "auto",
+        "unit": "short"
+      },
+      "pluginVersion": "8.0.0",
+      "targets": [
+        {
+          "expr": "active_agents",
+          "legendFormat": "Активные агенты",
+          "refId": "A"
+        }
+      ],
+      "title": "Активные агенты",
+      "type": "stat",
+      "transparent": false
+    },
+    {
+      "datasource": "Prometheus",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {}
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 1,
+        "w": 12,
+        "x": 0,
+        "y": 0
+      },
+      "id": 3,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "area",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "reduceOptions": [
+          {
+            "calcs": [
+              "lastNotNull"
+            ],
+            "fields": "",
+            "values": false,
+            "calcs": [
+              "lastNotNull"
+            ]
+          }
+        ],
+        "textMode": "auto",
+        "unit": "short"
+      },
+      "pluginVersion": "8.0.0",
+      "targets": [
+        {
+          "expr": "agent_runs_total",
+          "legendFormat": "Запуски агентов",
+          "refId": "A"
+        }
+      ],
+      "title": "Запуски агентов (общее)",
+      "type": "stat",
+      "transparent": false
+    },
+    {
+      "datasource": "Prometheus",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {}
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 2,
+        "w": 0,
+        "x": 12,
+        "y": 0
+      },
+      "id": 4,
+      "maxDataPoints": 50,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "area",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "reduceOptions": [
+          {
+            "calcs": [
+              "lastNotNull"
+            ],
+            "fields": "",
+            "values": false,
+            "calcs": [
+              "lastNotNull"
+            ]
+          }
+        ],
+        "textMode": "auto",
+        "unit": "reqps"
+      },
+      "pluginVersion": "8.0.0",
+      "targets": [
+        {
+          "expr": "rate(agent_pages_fetched_total[5m])",
+          "legendFormat": "Pages/sec (5m avg)",
+          "refId": "A"
+        }
+      ],
+      "title": "Загрузки страниц (в секунду)",
+      "type": "stat",
+      "transparent": false
+    },
+    {
+      "datasource": "Prometheus",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {}
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 2,
+        "w": 12,
+        "x": 0,
+        "y": 0
+      },
+      "id": 5,
+      "maxDataPoints": 50,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "area",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "reduceOptions": [
+          {
+            "calcs": [
+              "lastNotNull"
+            ],
+            "fields": "",
+            "values": false,
+            "calcs": [
+              "lastNotNull"
+            ]
+          }
+        ],
+        "textMode": "auto",
+        "unit": "reqps"
+      },
+      "pluginVersion": "8.0.0",
+      "targets": [
+        {
+          "expr": "rate(events_created_total[5m])",
+          "legendFormat": "Events/sec (5m avg)",
+          "refId": "A"
+        }
+      ],
+      "title": "Создание событий (в секунду)",
+      "type": "stat",
+      "transparent": false
+    },
+    {
+      "datasource": "Prometheus",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {}
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 3,
+        "w": 0,
+        "x": 12,
+        "y": 0
+      },
+      "id": 6,
+      "maxDataPoints": 50,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "area",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "reduceOptions": [
+          {
+            "calcs": [
+              "lastNotNull"
+            ],
+            "fields": "",
+            "values": false,
+            "calcs": [
+              "lastNotNull"
+            ]
+          }
+        ],
+        "textMode": "auto",
+        "unit": "reqps"
+      },
+      "pluginVersion": "8.0.0",
+      "targets": [
+        {
+          "expr": "rate(notifications_sent_total[5m])",
+          "legendFormat": "Notifications/sec (5m avg)",
+          "refId": "A"
+        }
+      ],
+      "title": "Отправка уведомлений (в секунду)",
+      "type": "stat",
+      "transparent": false
+    },
+    {
+      "datasource": "Prometheus",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {}
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 3,
+        "w": 12,
+        "x": 0,
+        "y": 0
+      },
+      "id": 7,
+      "maxDataPoints": 50,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "area",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "reduceOptions": [
+          {
+            "calcs": [
+              "lastNotNull"
+            ],
+            "fields": "",
+            "values": false,
+            "calcs": [
+              "lastNotNull"
+            ]
+          }
+        ],
+        "textMode": "auto",
+        "unit": "reqps"
+      },
+      "pluginVersion": "8.0.0",
+      "targets": [
+        {
+          "expr": "rate(api_requests_total{status=~\"5..\"}[5m])",
+          "legendFormat": "API Errors/sec (5m avg)",
+          "refId": "A"
+        }
+      ],
+      "title": "Ошибки API (в секунду)",
+      "type": "stat",
+      "transparent": false
+    },
+    {
+      "datasource": "Prometheus",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {}
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 4,
+        "w": 0,
+        "x": 12,
+        "y": 0
+      },
+      "id": 8,
+      "maxDataPoints": 50,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "area",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "reduceOptions": [
+          {
+            "calcs": [
+              "lastNotNull"
+            ],
+            "fields": "",
+            "values": false,
+            "calcs": [
+              "lastNotNull"
+            ]
+          }
+        ],
+        "textMode": "auto",
+        "unit": "reqps"
+      },
+      "pluginVersion": "8.0.0",
+      "targets": [
+        {
+          "expr": "histogram_quantile(0.95, rate(api_response_time_seconds[5m]))",
+          "legendFormat": "95th percentile latency",
+          "refId": "A"
+        }
+      ],
+      "title": "95% перцентиль времени ответа API",
+      "type": "stat",
+      "transparent": false
+    },
+    {
+      "datasource": "Prometheus",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {}
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 0,
+        "w": 18,
+        "x": 0,
+        "y": 12
+      },
+      "id": 9,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "area",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "reduceOptions": [
+          {
+            "calcs": [
+              "lastNotNull"
+            ],
+            "fields": "",
+            "values": false,
+            "calcs": [
+              "lastNotNull"
+            ]
+          }
+        ],
+        "textMode": "auto"
+      },
+      "pluginVersion": "8.0.0",
+      "targets": [
+        {
+          "expr": "(daily_pages_used / daily_pages_cap) * 100",
+          "legendFormat": "Использование квоты страниц (%)",
+          "refId": "A"
+        }
+      ],
+      "title": "Использование дневной квоты (%)",
+      "type": "stat",
+      "transparent": false
+    }
+  ],
+  "refresh": "30s",
+  "schema": 36,
+  "style": "dark",
+  "tags": [
+    "bgw",
+    "monitoring"
+  ],
+  "templating": {
+    "list": [
+      {
+        "current": {
+          "text": "Текущее значение: $value",
+          "color": "rgba(245, 54, 54, 0.9)"
+        }
+      }
+    ]
+  },
+  "time": {
+    "from": "now-1h",
+    "to": "now"
+  },
+  "title": "BGW - Обзор системы",
+  "uid": "bgw-overview",
+  "version": 1
+}

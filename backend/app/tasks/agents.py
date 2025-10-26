@@ -5,7 +5,7 @@ from app.core.database import SessionLocal
 from app.models.agent import SourceAgent
 from app.agents.registry import agent_registry
 from app.agents.base import RuntimeContext
-from app.services.notification_service import notification_service
+from app.services.notification_service import get_notification_service
 from app.services.event_service import event_service
 import logging
 
@@ -15,6 +15,9 @@ logger = logging.getLogger(__name__)
 @celery_app.task(bind=True)
 def run_agent_task(self, agent_id: str):
     """Запустить агента."""
+    import asyncio
+    from app.services.event_service import event_service
+
     db = SessionLocal()
     try:
         # Получаем агента из базы
@@ -49,19 +52,29 @@ def run_agent_task(self, agent_id: str):
 
         # Запускаем агента
         try:
-            events = await agent_class(agent.config, {}, ctx).run()
+            # Запускаем асинхронный код в event loop
+            loop = asyncio.new_event_loop()
+            asyncio.set_event_loop(loop)
+            events = loop.run_until_complete(agent_class(agent.config, {}, ctx).run())
+            loop.close()
+
             logger.info(f"Agent {agent_id} found {len(events)} events")
 
             # Обрабатываем найденные события
             processed_count = 0
             for event_draft in events:
                 try:
-                    event = await event_service.process_event(db, event_draft, agent.id)
+                    loop = asyncio.new_event_loop()
+                    asyncio.set_event_loop(loop)
+                    event = loop.run_until_complete(event_service.process_event(db, event_draft, agent.id))
+
                     if event:
                         processed_count += 1
 
                         # Проверяем правила уведомлений
-                        await event_service.check_notification_rules(db, event)
+                        loop.run_until_complete(event_service.check_notification_rules(db, event))
+
+                    loop.close()
 
                 except Exception as e:
                     logger.error(f"Error processing event: {e}")
